@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>توعية بالأمن السيبراني</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 15px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+    button {
+      background-color: #38bdf8;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0ea5e9;
+    }
+    #feedback {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+    #qr-code {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    #leaderboard {
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>توعية بالأمن السيبراني</h1>
+
+  <!-- QR Code Section -->
+  <div id="qr-code">
+    <h3>مسح الباركود للانضمام للعبة:</h3>
+    <canvas id="qrcode"></canvas> <!-- إضافة عنصر canvas لعرض الباركود -->
+  </div>
+
+  <!-- Level Selection -->
+  <div id="level-selection">
+    <h2>اختر مستوى اللعب:</h2>
+    <button onclick="startGame('easy')">🟢 سهل</button>
+    <button onclick="startGame('medium')">🟡 متوسط</button>
+    <button onclick="startGame('hard')">🔴 صعب</button>
+  </div>
+
+  <!-- Quiz Section -->
+  <div id="quiz" style="display:none;">
+    <h2 id="question"></h2>
+    <div id="answers"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <!-- Result Section -->
+  <div id="result" style="display:none;"></div>
+
+  <!-- Leaderboard -->
+  <div id="leaderboard" style="display:none;">
+    <h3>أفضل 10 مراكز:</h3>
+    <ul id="leaderboard-list"></ul>
+  </div>
+</div>
+
+<script>
+const questions = {
+  easy: [
+    { question: "ما هو الهدف الرئيسي من الأمن السيبراني؟", answers: ["حماية البيانات والمعلومات", "تسريع الإنترنت", "نشر الفيروسات"], correct: 0 },
+    { question: "من أمثلة كلمة المرور القوية؟", answers: ["123456", "Abc@123", "اسم المستخدم"], correct: 1 },
+    { question: "ماذا يجب عليك قبل فتح رابط غريب؟", answers: ["فتحه فورًا", "التحقق من المصدر", "تجاهله دائمًا"], correct: 1 },
+    { question: "أفضل وسيلة لحماية الحسابات؟", answers: ["وضع كلمة سر ضعيفة", "مشاركة كلمة المرور", "تفعيل التحقق بخطوتين"], correct: 2 },
+    { question: "التصيد الاحتيالي هو:", answers: ["إرسال رسائل مزيفة للحصول على المعلومات", "حماية الشبكة", "تحديث الجهاز"], correct: 0 }
+  ],
+  medium: [
+    { question: "عند تلقيك رسالة من البنك تطلب بياناتك، التصرف الصحيح هو؟", answers: ["إرسال البيانات مباشرة", "الاتصال بالبنك رسميًا", "تجاهل الرسالة فقط"], correct: 1 },
+    { question: "أي من التالي مثال على البرمجيات الخبيثة؟", answers: ["مضاد الفيروسات", "حصان طروادة", "الجدار الناري"], correct: 1 },
+    { question: "لماذا تعد الشبكات المفتوحة خطيرة؟", answers: ["لأنها مجانية", "يمكن للقراصنة التجسس عبرها", "تزيد سرعة الإنترنت"], correct: 1 },
+    { question: "أهم سبب لاستخدام VPN؟", answers: ["تخفيض الفواتير", "حماية الخصوصية", "منع الإعلانات"], correct: 1 },
+    { question: "عند الاشتباه بوجود فايروس، ماذا تفعل؟", answers: ["إغلاق الجهاز", "تشغيل مكافح الفيروسات", "إعادة تشغيل الجهاز فقط"], correct: 1 }
+  ],
+  hard: [
+    { question: "ما هي خاصية \"التشفير من الطرف إلى الطرف\"؟", answers: ["يسمح فقط للمرسل والمستقبل بقراءة الرسالة", "يمنع الرسائل نهائيًا", "يزيد سرعة الشبكة"], correct: 0 },
+    { question: "في حال تم اختراق جهازك، ما أول إجراء صحيح؟", answers: ["إعادة تشغيله", "فصل الجهاز عن الإنترنت فورًا", "مسح جميع الملفات"], correct: 1 },
+    { question: "بروتوكول HTTPS يختلف عن HTTP في:", answers: ["السرعة", "استخدام التشفير لحماية البيانات", "عدم استخدام الانترنت"], correct: 1 },
+    { question: "الهندسة الاجتماعية تعتمد على:", answers: ["اختراق الأنظمة التقنية", "خداع الأشخاص للحصول على المعلومات", "تحطيم الأجهزة"], correct: 1 },
+    { question: "أفضل طريقة لتأمين الأجهزة المحمولة؟", answers: ["استخدام كلمة مرور واحدة لكل الحسابات", "تحديثات الأمان الدورية", "تعطيل الجدار الناري"], correct: 1 }
+  ]
+};
+
+let currentQuestions = [];
+let currentQuestion = 0;
+let score = 0;
+let timeLimit = 10;  // مدة العداد بالثواني
+let timer;
+
+function startGame(level) {
+  currentQuestions = questions[level];
+  document.getElementById('level-selection').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  currentQuestion = 0;
+  score = 0;
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = currentQuestions[currentQuestion];
+  document.getElementById('question').textContent = q.question;
+  const answersDiv = document.getElementById('answers');
+  answersDiv.innerHTML = '';
+  document.getElementById('feedback').innerHTML = '';
+
+  q.answers.forEach((answer, index) => {
+    const btn = document.createElement('button');
+    btn.textContent = answer;
+    btn.onclick = () => checkAnswer(index);
+    answersDiv.appendChild(btn);
+  });
+
+  startTimer();  // بدء العداد
+}
+
+function startTimer() {
+  let timeRemaining = timeLimit;
+  document.getElementById('feedback').innerHTML = `الوقت المتبقي: ${timeRemaining} ثواني`;
+  timer = setInterval(() => {
+    timeRemaining--;
+    document.getElementById('feedback').innerHTML = `الوقت المتبقي: ${timeRemaining} ثواني`;
+    if (timeRemaining <= 0) {
+      clearInterval(timer);  // إيقاف العداد
+      checkAnswer(-1);  // اعتبار الإجابة خاطئة بعد انتهاء الوقت
+    }
+  }, 1000);
+}
+
+function checkAnswer(selected) {
+  clearInterval(timer);  // إيقاف العداد
+  const correctIndex = currentQuestions[currentQuestion].correct;
+  const feedback = document.getElementById('feedback');
+
+  if (selected === correctIndex) {
+    score++;
+    feedback.innerHTML = '<span style="color: lightgreen;">✔️ إجابة صحيحة!</span>';
+  } else if (selected === -1) {
+    feedback.innerHTML = '<span style="color: red;">❌ انتهى الوقت!</span>';
+  } else {
+    feedback.innerHTML = `<span style="color: red;">❌ إجابة خاطئة.</span><br>الإجابة الصحيحة: <strong>${currentQuestions[currentQuestion].answers[correctIndex]}</strong>`;
+  }
+
+  const buttons = document.querySelectorAll('#answers button');
+  buttons.forEach(btn => btn.disabled = true);
+
+  setTimeout(() => {
+    currentQuestion++;
+    if (currentQuestion < currentQuestions.length) {
+      showQuestion();
+    } else {
+      showResult();
+    }
+  }, 2000);
+}
+
+function showResult() {
+  document.getElementById('quiz').style.display = 'none';
+  const resultDiv = document.getElementById('result');
+  let level = '';
+  const percent = (score / currentQuestions.length) * 100;
+
+  if (percent >= 90) {
+    level = "خبير في الأمن السيبراني 🛡️";
+  } else if (percent >= 70) {
+    level = "ممارس جيد 🔒";
+  } else {
+    level = "تحتاج لمزيد من التعلم 🧠";
+  }
+
+  resultDiv.innerHTML = `<h2>نتيجتك: ${score} من ${currentQuestions.length}</h2>
+                         <h3>مستواك: ${level}</h3>`;
+  
+  // إضافة النقاط إلى القائمة
+  saveScore(level, score);
+
+  resultDiv.style.display = 'block';
+  showLeaderboard();
+}
+
+function saveScore(level, score) {
+  let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+  leaderboard.push({ level, score });
+  leaderboard.sort((a, b) => b.score - a.score); // ترتيب النقاط
+  leaderboard = leaderboard.slice(0, 10);  // حفظ المراكز العشر الأولى
+  localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+}
+
+function showLeaderboard() {
+  const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+  const leaderboardList = document.getElementById('leaderboard-list');
+  leaderboardList.innerHTML = '';
+
+  leaderboard.forEach((entry, index) => {
+    const li = document.createElement('li');
+    li.textContent = `${index + 1}. ${entry.level}: ${entry.score} نقطة`;
+    leaderboardList.appendChild(li);
+  });
+
+  document.getElementById('leaderboard').style.display = 'block';
+}
+
+// إنشاء QR Code
+QRcode.toCanvas(document.getElementById('qrcode'), window.location.href, function(error) {
+  if (error) console.error(error);
+});
+</script>
+
+</body>
+</html>
